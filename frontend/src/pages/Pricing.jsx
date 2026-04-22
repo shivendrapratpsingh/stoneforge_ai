@@ -33,7 +33,6 @@ export default function Pricing() {
     setBusy(code); setErr("");
     try {
       const { data: order } = await api.post("/payments/create-order", { plan_code: code });
-      // Try the Razorpay checkout widget if it's loaded; otherwise use mock flow
       if (window.Razorpay && !String(order.order_id).startsWith("order_mock_")) {
         const rzp = new window.Razorpay({
           key: order.key_id, amount: order.amount, currency: order.currency,
@@ -54,7 +53,6 @@ export default function Pricing() {
         });
         rzp.open();
       } else {
-        // Mock-mode verify (dev only)
         await api.post("/payments/verify", {
           razorpay_order_id: order.order_id,
           razorpay_payment_id: "pay_mock_" + Date.now(),
@@ -62,7 +60,7 @@ export default function Pricing() {
           plan_code: code,
         });
         await refreshUser();
-        alert("Mock payment successful — your account is now Pro (dev mode).");
+        alert("Mock payment successful - your account is now Pro (dev mode).");
         nav("/app");
       }
     } catch (e) {
@@ -77,6 +75,21 @@ export default function Pricing() {
       <h1 style={{textAlign:"center", marginTop:0}}>Simple pricing, built for Indian students</h1>
       <p className="muted center">Start free · cancel anytime · GST invoice on request</p>
 
+      {promo?.active && (
+        <div className="card" style={{
+          marginTop: 16,
+          background: "linear-gradient(90deg, rgba(242,201,76,0.2), rgba(242,156,76,0.2))",
+          borderColor: "#f2c94c", textAlign: "center",
+        }}>
+          <strong style={{fontSize: 18}}>Pro is FREE for everyone right now</strong>
+          <div className="small muted" style={{marginTop: 4}}>
+            All Pro features unlocked for every signed-in user
+            {promo.expires_at && <> until {new Date(promo.expires_at).toLocaleString()}</>}.
+            No upgrade needed - just {user ? "start practicing" : "sign up"}.
+          </div>
+        </div>
+      )}
+
       {err && <div className="error" style={{marginTop:12}}>{err}</div>}
 
       <div className="price-grid" style={{marginTop:24}}>
@@ -88,14 +101,14 @@ export default function Pricing() {
               <div className="badge">{code.includes("yearly") ? "BEST VALUE" : meta.highlight ? "POPULAR" : "TEAMS"}</div>
               <h3 style={{marginTop:0}}>{meta.title}</h3>
               <div className="price">
-                ₹{Number(p.amount_rupees).toLocaleString("en-IN")}
+                INR {Number(p.amount_rupees).toLocaleString("en-IN")}
                 <small> / {code.includes("yearly") ? "year" : "month"}</small>
               </div>
               <ul className="clean">
-                {meta.perks.map((perk, i) => <li key={i}>✓ {perk}</li>)}
+                {meta.perks.map((perk, i) => <li key={i}>OK {perk}</li>)}
               </ul>
-              <button className="btn" disabled={!!busy} onClick={() => buy(code)} style={{width:"100%"}}>
-                {busy === code ? "..." : "Upgrade"}
+              <button className="btn" disabled={!!busy || promo?.active} onClick={() => buy(code)} style={{width:"100%"}}>
+                {promo?.active ? "Free right now" : busy === code ? "..." : "Upgrade"}
               </button>
             </div>
           );
