@@ -1,13 +1,15 @@
-"""Admin-only aggregate stats. Gated by user.is_admin."""
+"""Admin-only aggregate stats + promo controls. Gated by user.is_admin."""
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import get_current_user
 from app.models_db import AIGeneration, Attempt, Subscription, User
+from app.promo import promo_expiry, set_promo_expiry
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -33,7 +35,6 @@ def stats(
     new_users_7d = db.query(func.count(User.id)).filter(User.created_at >= d7).scalar() or 0
     new_users_30d = db.query(func.count(User.id)).filter(User.created_at >= d30).scalar() or 0
 
-    # "Active" = did at least one typing/steno attempt in the window
     active_1d = db.query(func.count(func.distinct(Attempt.user_id))).filter(
         Attempt.created_at >= d1
     ).scalar() or 0
@@ -44,11 +45,9 @@ def stats(
         Attempt.created_at >= d30
     ).scalar() or 0
 
-    # Breakdown by plan
     plan_rows = db.query(User.plan, func.count(User.id)).group_by(User.plan).all()
     plan_counts = {plan: cnt for plan, cnt in plan_rows}
 
-    # Paid subscriptions still active
     active_subs = db.query(func.count(Subscription.id)).filter(
         Subscription.status == "active"
     ).scalar() or 0
@@ -63,7 +62,6 @@ def stats(
         AIGeneration.created_at >= d7
     ).scalar() or 0
 
-    # Recent signups (last 10)
     recent = (
         db.query(User)
         .order_by(User.created_at.desc())
@@ -83,7 +81,6 @@ def stats(
         for u in recent
     ]
 
-    # Daily signups for the last 14 days (for a tiny sparkline)
     signups_series = []
     for i in range(13, -1, -1):
         day_start = (now - timedelta(days=i)).replace(
@@ -94,6 +91,8 @@ def stats(
             User.created_at >= day_start, User.created_at < day_end
         ).scalar() or 0
         signups_series.append({"date": day_start.strftime("%Y-%m-%d"), "count": cnt})
+
+    promo_exp = promo_expiry(db)
 
     return {
         "generated_at": now.isoformat(),
@@ -117,6 +116,10 @@ def stats(
         "revenue": {
             "active_subscriptions": active_subs,
         },
+        "promo": {
+            "active": promo_exp is not None,
+            "expires_at": promo_exp.isoformat() if promo_exp else None,
+        },
         "recent_signups": recent_signups,
         "signups_series": signups_series,
     }
@@ -127,7 +130,7 @@ def reseed(
     db: Session = Depends(get_db),
     _admin: User = Depends(_require_admin),
 ):
-    """Force-re-run the lessons seed. Idempotent — safe to hit repeatedly."""
+    """Force-re-run the lessons seed. Idempotent - safe to hit repeatedly."""
     from app.content.seed import seed_all
     from app.models_db import Lesson
     before = db.query(func.count(Lesson.id)).scalar() or 0
@@ -138,3 +141,43 @@ def reseed(
     after = db.query(func.count(Lesson.id)).scalar() or 0
     return {"ok": True, "lessons_before": before, "lessons_after": after,
             "inserted": max(0, after - before)}
+
+
+# --- Global free-Pro promo ----------------------------------------
+class PromoIn(BaseModel):
+    days: int = Field(default=7, ge=1, le=365)
+
+
+@router.get("/promo")
+def get_promo(
+    db: Session = Depends(get_db),
+    _admin: User = Depends(_require_admin),
+):
+    exp = promo_expiry(db)
+    return {
+        "active": exp is not None,
+        "expires_at": exp.isoformat() if exp else None,
+    }
+
+
+@router.post("/promo")
+def start_promo(
+    data: PromoIn,
+    db: Session = Depends(get_db),
+    _admin: User = Depends(_require_admin),
+):
+    """Turn on a global free-Pro promo for `days` days from now.
+    Hitting this again extends / resets the expiry."""
+    when = datetime.utcnow() + timedelta(days=data.days)
+    set_promo_expiry(db, when)
+    return {"ok": True, "active": True, "expires_at": when.isoformat()}
+
+
+@router.delete("/promo")
+def end_promo(
+    db: Session = Depends(get_db),
+    _admin: User = Depends(_require_admin),
+):
+    """End the promo immediately - all non-paying users revert to Free."""
+    set_promo_expiry(db, None)
+    return {"ok": True, "active": False, "expires_at": None}

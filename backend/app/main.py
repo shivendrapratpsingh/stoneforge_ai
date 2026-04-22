@@ -40,7 +40,7 @@ async def _unhandled(request: Request, exc: Exception):
 
 
 from app.routes import (admin, ai, analytics, auth, dictation, lessons,
-                        payments, steno, typing)
+                        payments, promo, steno, typing)
 app.include_router(auth.router)
 app.include_router(typing.router)
 app.include_router(steno.router)
@@ -50,6 +50,7 @@ app.include_router(lessons.router)
 app.include_router(ai.router)
 app.include_router(payments.router)
 app.include_router(admin.router)
+app.include_router(promo.router)
 
 
 @app.get("/")

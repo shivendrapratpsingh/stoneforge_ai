@@ -96,6 +96,13 @@ export default function AdminStats() {
         !err && <p>Loading…</p>
       ) : (
         <>
+          <PromoPanel promo={data.promo} onChange={async () => {
+            try {
+              const r = await api.get("/admin/stats");
+              setData(r.data);
+            } catch {}
+          }}/>
+
           <h3 style={{ color: "#8ea0bf", marginTop: 8 }}>Users</h3>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
             <StatCard label="Total users" value={data.users.total}/>
@@ -180,4 +187,75 @@ function Pill({ children }) {
   return <span style={{
     background: bg, padding: "2px 10px", borderRadius: 999, fontSize: 12,
   }}>{children}</span>;
+}
+
+function PromoPanel({ promo, onChange }) {
+  const [days, setDays] = useState(7);
+  const [busy, setBusy] = useState(false);
+  const active = promo?.active;
+  const exp = promo?.expires_at ? new Date(promo.expires_at) : null;
+
+  async function start() {
+    setBusy(true);
+    try {
+      await api.post("/admin/promo", { days: Number(days) });
+      await onChange();
+    } catch (e) {
+      alert("Start failed: " + (e?.response?.data?.detail || e.message));
+    } finally { setBusy(false); }
+  }
+  async function end() {
+    if (!confirm("End the free-Pro promo right now?")) return;
+    setBusy(true);
+    try {
+      await api.delete("/admin/promo");
+      await onChange();
+    } catch (e) {
+      alert("End failed: " + (e?.response?.data?.detail || e.message));
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div style={{
+      background: active ? "#1a2d1a" : "#11161f",
+      border: `1px solid ${active ? "#3e7a3e" : "#22304a"}`,
+      borderRadius: 12, padding: "16px 18px", marginBottom: 20,
+    }}>
+      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12}}>
+        <div>
+          <div style={{fontSize:12, color:"#8ea0bf", textTransform:"uppercase", letterSpacing:0.5}}>
+            Global free-Pro promo
+          </div>
+          <div style={{fontSize:18, fontWeight:600, marginTop:4}}>
+            {active
+              ? <>Active until <span style={{color:"#4ade80"}}>{exp?.toLocaleString()}</span></>
+              : <span style={{color:"#8ea0bf"}}>Off — only paying users get Pro</span>}
+          </div>
+          <div style={{fontSize:12, color:"#8ea0bf", marginTop:4}}>
+            While active, every signed-in user has Pro access — all locked lessons unlock, daily quotas disabled.
+          </div>
+        </div>
+        <div style={{display:"flex", gap:8, alignItems:"center"}}>
+          <input type="number" min="1" max="365" value={days}
+            onChange={e => setDays(e.target.value)}
+            style={{width:72, padding:"8px 10px", background:"#0e131c",
+                    border:"1px solid #22304a", borderRadius:8, color:"inherit"}}/>
+          <span style={{fontSize:13, color:"#8ea0bf"}}>days</span>
+          <button className="btn" disabled={busy} onClick={start}
+            style={{padding:"8px 14px", background:"#2d4a2d", border:"1px solid #3e7a3e",
+                    borderRadius:8, color:"inherit", cursor:"pointer"}}>
+            {active ? "Extend / reset" : "Start promo"}
+          </button>
+          {active && (
+            <button className="btn ghost" disabled={busy} onClick={end}
+              style={{padding:"8px 14px", background:"transparent",
+                      border:"1px solid #a04040", borderRadius:8,
+                      color:"#f87171", cursor:"pointer"}}>
+              End now
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }

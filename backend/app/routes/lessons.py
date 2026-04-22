@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.deps import get_optional_user
 from app.models_db import Lesson, User
+from app.promo import has_pro_access
 from app.schemas import LessonOut
 
 log = logging.getLogger("stenoforge.lessons")
@@ -17,7 +18,7 @@ def _ensure_seeded(db: Session) -> None:
     try:
         if db.query(Lesson).first() is None:
             from app.content.seed import seed_all
-            log.info("[lessons] table empty — running seed_all()")
+            log.info("[lessons] table empty - running seed_all()")
             seed_all()
     except Exception as e:  # noqa: BLE001
         log.warning(f"[lessons] auto-seed skipped: {type(e).__name__}: {e}")
@@ -32,8 +33,7 @@ def list_lessons(kind: str = "typing", language: str = "en",
            .filter(Lesson.kind == kind, Lesson.language == language)
            .order_by(Lesson.order_idx.asc(), Lesson.id.asc()))
     lessons = q.all()
-    if not user or user.plan == "free":
-        # still return them, but mark non-free ones as content-lite
+    if not has_pro_access(user, db):
         for l in lessons:
             if not l.is_free:
                 l.content_json = {"locked": True,
@@ -48,7 +48,7 @@ def get_lesson(slug: str, db: Session = Depends(get_db),
     lesson = db.query(Lesson).filter(Lesson.slug == slug).first()
     if not lesson:
         raise HTTPException(404, "Lesson not found")
-    if not lesson.is_free and (not user or user.plan == "free"):
+    if not lesson.is_free and not has_pro_access(user, db):
         lesson.content_json = {"locked": True,
                                 "preview": (lesson.content_json or {}).get("preview", "")}
     return lesson

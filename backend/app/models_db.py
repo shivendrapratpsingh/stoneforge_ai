@@ -96,3 +96,14 @@ class AIGeneration(Base):
     output_text: Mapped[str] = mapped_column(Text, default="")
     tokens: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class AppSetting(Base):
+    """Simple key/value bucket for runtime-togglable settings.
+    Used for things like the global 'free Pro promo' expiry date."""
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow,
+                                                 onupdate=datetime.utcnow)

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models_db import User, AIGeneration, Attempt
+from app.promo import promo_active
 from app.security import decode_token
 from app.config import get_settings
 
@@ -44,19 +45,24 @@ def get_optional_user(
         return None
 
 
-def require_pro(user: User = Depends(get_current_user)) -> User:
-    if user.plan not in ("pro", "institute"):
-        raise HTTPException(
-            status.HTTP_402_PAYMENT_REQUIRED,
-            "Upgrade to Pro to use this feature."
-        )
-    return user
+def require_pro(user: User = Depends(get_current_user),
+                db: Session = Depends(get_db)) -> User:
+    if user.plan in ("pro", "institute"):
+        return user
+    if promo_active(db):  # global free-Pro promo active
+        return user
+    raise HTTPException(
+        status.HTTP_402_PAYMENT_REQUIRED,
+        "Upgrade to Pro to use this feature."
+    )
 
 
 def check_free_quota(user: User, db: Session, kind: str,
                      daily_limit: Optional[int] = None) -> None:
     """Raise 402 if a free user exceeds their daily quota for `kind`."""
     if user.plan in ("pro", "institute"):
+        return
+    if promo_active(db):  # global free-Pro promo active
         return
     limit = daily_limit if daily_limit is not None else settings.free_daily_ai_generations
     since = datetime.utcnow() - timedelta(days=1)
