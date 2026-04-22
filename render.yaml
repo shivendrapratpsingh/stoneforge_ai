@@ -1,0 +1,46 @@
+# Render.com free-tier blueprint for StenoForge AI backend only.
+# Frontend deploys to Vercel separately (faster + no cold starts).
+#
+# To use: Render Dashboard -> New -> Blueprint -> pick this repo.
+#
+# Free-tier trade-offs you're accepting:
+#   - Service sleeps after ~15 min of inactivity (~30s cold start on next hit)
+#   - SQLite data resets on every deploy (fine for friend testing; not for real users)
+#
+# Upgrade path: change `plan: free` -> `plan: starter` ($7/mo) to kill the sleep,
+# and add a paid Postgres database to persist user accounts.
+
+services:
+  - type: web
+    name: stenoforge-api
+    runtime: docker
+    region: singapore
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "10080"
+      - key: DATABASE_URL
+        value: sqlite:////tmp/stenoforge.db
+      - key: CORS_ORIGINS
+        # Set this to your Vercel frontend URL after you deploy it.
+        # Until then, "*" lets anything talk to the API.
+        value: "*"
+      - key: AI_PROVIDER
+        value: mock
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false

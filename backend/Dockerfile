@@ -12,6 +12,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 EXPOSE 8000
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", \
-     "-w", "2", "-b", "0.0.0.0:8000", \
-     "--timeout", "60", "--access-logfile", "-", "app.main:app"]
+# Honor $PORT (Render / Railway / Fly inject this) but default to 8000 locally.
+CMD ["sh", "-c", "gunicorn -k uvicorn.workers.UvicornWorker -w 2 -b 0.0.0.0:${PORT:-8000} --timeout 60 --access-logfile - app.main:app"]
