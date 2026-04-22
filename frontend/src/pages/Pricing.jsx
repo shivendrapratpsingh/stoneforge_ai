@@ -19,11 +19,13 @@ export default function Pricing() {
   const { user, refreshUser } = useAuth();
   const nav = useNavigate();
   const [plans, setPlans] = useState(null);
+  const [promo, setPromo] = useState(null);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState("");
 
   useEffect(() => {
     api.get("/payments/plans").then(r => setPlans(r.data));
+    api.get("/promo/status").then(r => setPromo(r.data)).catch(() => {});
   }, []);
 
   async function buy(code) {
