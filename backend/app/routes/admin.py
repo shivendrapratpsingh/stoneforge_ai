@@ -120,3 +120,21 @@ def stats(
         "recent_signups": recent_signups,
         "signups_series": signups_series,
     }
+
+
+@router.post("/reseed")
+def reseed(
+    db: Session = Depends(get_db),
+    _admin: User = Depends(_require_admin),
+):
+    """Force-re-run the lessons seed. Idempotent — safe to hit repeatedly."""
+    from app.content.seed import seed_all
+    from app.models_db import Lesson
+    before = db.query(func.count(Lesson.id)).scalar() or 0
+    try:
+        seed_all()
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(500, f"Seed failed: {type(e).__name__}: {e}")
+    after = db.query(func.count(Lesson.id)).scalar() or 0
+    return {"ok": True, "lessons_before": before, "lessons_after": after,
+            "inserted": max(0, after - before)}

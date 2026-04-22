@@ -8,10 +8,37 @@ export default function Lessons() {
   const [kind, setKind] = useState("typing");
   const [language, setLanguage] = useState(user?.lang_pref || "en");
   const [lessons, setLessons] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    api.get(`/lessons?kind=${kind}&language=${language}`).then(r => setLessons(r.data));
-  }, [kind, language]);
+  async function load() {
+    setLoading(true); setError("");
+    try {
+      const r = await api.get(`/lessons?kind=${kind}&language=${language}`);
+      setLessons(Array.isArray(r.data) ? r.data : []);
+    } catch (e) {
+      const msg = e?.response?.data?.detail
+        || e?.message
+        || "Could not reach the lessons service.";
+      setError(msg);
+      setLessons([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [kind, language]);
+
+  async function reseed() {
+    if (!user?.is_admin) return;
+    try {
+      const r = await api.post("/admin/reseed");
+      alert(`Seed done — lessons in DB: ${r.data?.lessons_after ?? "?"}`);
+      load();
+    } catch (e) {
+      alert("Reseed failed: " + (e?.response?.data?.detail || e?.message));
+    }
+  }
 
   function targetFor(l) {
     if (l.content_json?.locked) return "/pricing";
@@ -21,7 +48,15 @@ export default function Lessons() {
 
   return (
     <div className="container">
-      <h1 style={{marginTop:0}}>Lessons</h1>
+      <div className="row" style={{justifyContent:"space-between", alignItems:"center"}}>
+        <h1 style={{marginTop:0}}>Lessons</h1>
+        {user?.is_admin && (
+          <button className="btn ghost" onClick={reseed} title="Admin: repopulate lessons in DB">
+            Reseed lessons
+          </button>
+        )}
+      </div>
+
       <div className="row" style={{gap:10}}>
         <select className="input" style={{maxWidth:180}} value={kind} onChange={e=>setKind(e.target.value)}>
           <option value="typing">Typing</option>
@@ -33,8 +68,21 @@ export default function Lessons() {
         </select>
       </div>
 
+      {error && (
+        <div className="card" style={{marginTop:16, borderColor:"var(--danger)", background:"rgba(239,68,68,0.08)"}}>
+          <strong style={{color:"var(--danger)"}}>Could not load lessons</strong>
+          <div className="small muted" style={{marginTop:4}}>{error}</div>
+          <div className="small muted" style={{marginTop:6}}>
+            If this keeps happening, the backend may be waking up (free tier cold-start). Try again in ~30 seconds.
+          </div>
+          <button className="btn" style={{marginTop:10}} onClick={load}>Retry</button>
+        </div>
+      )}
+
       <div className="grid-2" style={{marginTop:16}}>
-        {lessons.map(l => {
+        {loading && <p className="muted">Loading lessons…</p>}
+
+        {!loading && lessons.map(l => {
           const locked = !!l.content_json?.locked;
           const preview = locked
             ? "🔒 Upgrade to Pro to unlock this lesson."
@@ -69,7 +117,19 @@ export default function Lessons() {
             </Link>
           );
         })}
-        {!lessons.length && <p className="muted">No lessons yet.</p>}
+
+        {!loading && !error && lessons.length === 0 && (
+          <div className="card">
+            <strong>No lessons for this combo yet.</strong>
+            <div className="small muted" style={{marginTop:4}}>
+              The content set ships with 30 typing + 24 shorthand lessons per language.
+              If nothing shows here, the DB is likely un-seeded.
+              {user?.is_admin
+                ? " Click \"Reseed lessons\" above to populate."
+                : " Ask an admin to run the reseed."}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
