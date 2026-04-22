@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     free_daily_ai_generations: int = 3
     free_daily_sessions: int = 3
 
+    # Admin access. Comma-separated emails that auto-get is_admin=True on
+    # signup and can access /admin/stats.
+    # Example: ADMIN_EMAILS="you@example.com,other@x.com"
+    admin_emails: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

@@ -8,6 +8,7 @@ import TypingTrainer from "./pages/TypingTrainer.jsx";
 import StenoTrainer from "./pages/StenoTrainer.jsx";
 import Lessons from "./pages/Lessons.jsx";
 import Pricing from "./pages/Pricing.jsx";
+import AdminStats from "./pages/AdminStats.jsx";
 import NotFound from "./pages/NotFound.jsx";
 import Protected from "./components/Protected.jsx";
 
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/app/typing" element={<Protected><TypingTrainer /></Protected>} />
         <Route path="/app/steno" element={<Protected><StenoTrainer /></Protected>} />
         <Route path="/app/lessons" element={<Protected><Lessons /></Protected>} />
+        <Route path="/admin" element={<Protected><AdminStats /></Protected>} />
 
         <Route path="/404" element={<NotFound />} />
         <Route path="*" element={<Navigate to="/404" replace />} />

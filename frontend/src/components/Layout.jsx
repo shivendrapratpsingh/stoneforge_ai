@@ -13,6 +13,7 @@ export default function Layout() {
           {user && <NavLink to="/app/steno">Shorthand</NavLink>}
           {user && <NavLink to="/app/lessons">Lessons</NavLink>}
           <NavLink to="/pricing">Pricing</NavLink>
+          {user?.is_admin && <NavLink to="/admin">Admin</NavLink>}
           {!user ? (
             <>
               <NavLink to="/login">Login</NavLink>

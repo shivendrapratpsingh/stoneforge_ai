@@ -33,6 +33,7 @@ class UserOut(BaseModel):
     lang_pref: str
     exam_target: str
     plan: str
+    is_admin: bool = False
     created_at: datetime
 
     class Config:

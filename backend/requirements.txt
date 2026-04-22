@@ -10,6 +10,9 @@ email-validator>=2.2.0
 
 # Database
 SQLAlchemy>=2.0.35,<2.1
+# Postgres driver (Render free Postgres). psycopg2-binary has manylinux wheels
+# for Python 3.11 (our Docker base) so no compile toolchain needed.
+psycopg2-binary>=2.9.9,<3
 
 # Auth
 python-jose[cryptography]>=3.3.0,<4

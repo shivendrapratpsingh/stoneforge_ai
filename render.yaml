@@ -1,14 +1,21 @@
-# Render.com free-tier blueprint for StenoForge AI backend only.
+# Render.com free-tier blueprint for StenoForge AI backend + Postgres.
 # Frontend deploys to Vercel separately (faster + no cold starts).
 #
 # To use: Render Dashboard -> New -> Blueprint -> pick this repo.
 #
 # Free-tier trade-offs you're accepting:
-#   - Service sleeps after ~15 min of inactivity (~30s cold start on next hit)
-#   - SQLite data resets on every deploy (fine for friend testing; not for real users)
+#   - Web service sleeps after ~15 min of inactivity (~30s cold start on next hit)
+#   - Free Postgres expires after 30 days (Render emails you before that so you can
+#     upgrade or re-provision); you'll still have all data up until expiry.
 #
-# Upgrade path: change `plan: free` -> `plan: starter` ($7/mo) to kill the sleep,
-# and add a paid Postgres database to persist user accounts.
+# Upgrade path: change `plan: free` -> `plan: starter` ($7/mo) to kill the sleep.
+
+databases:
+  - name: stenoforge-db
+    plan: free
+    region: singapore
+    databaseName: stenoforge
+    user: stenoforge
 
 services:
   - type: web
@@ -31,13 +38,19 @@ services:
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "10080"
       - key: DATABASE_URL
-        value: sqlite:////tmp/stenoforge.db
+        fromDatabase:
+          name: stenoforge-db
+          property: connectionString
       - key: CORS_ORIGINS
         # Set this to your Vercel frontend URL after you deploy it.
         # Until then, "*" lets anything talk to the API.
         value: "*"
       - key: AI_PROVIDER
         value: mock
+      - key: ADMIN_EMAILS
+        # Comma-separated emails. Users with these emails become admins and
+        # can see /admin/stats. Set this to your own email in Render dashboard.
+        sync: false
       - key: RAZORPAY_KEY_ID
         sync: false
       - key: RAZORPAY_KEY_SECRET

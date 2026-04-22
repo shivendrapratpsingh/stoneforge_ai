@@ -39,7 +39,8 @@ async def _unhandled(request: Request, exc: Exception):
         content={"detail": f"{exc.__class__.__name__}: {exc}", "path": request.url.path})
 
 
-from app.routes import auth, typing, steno, dictation, analytics, lessons, ai, payments
+from app.routes import (admin, ai, analytics, auth, dictation, lessons,
+                        payments, steno, typing)
 app.include_router(auth.router)
 app.include_router(typing.router)
 app.include_router(steno.router)
@@ -48,6 +49,7 @@ app.include_router(analytics.router)
 app.include_router(lessons.router)
 app.include_router(ai.router)
 app.include_router(payments.router)
+app.include_router(admin.router)
 
 
 @app.get("/")
