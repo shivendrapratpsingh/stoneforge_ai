@@ -7,6 +7,8 @@ import Dashboard from "./pages/Dashboard.jsx";
 import TypingTrainer from "./pages/TypingTrainer.jsx";
 import StenoTrainer from "./pages/StenoTrainer.jsx";
 import Lessons from "./pages/Lessons.jsx";
+import FormatTyping from "./pages/FormatTyping.jsx";
+import PitmanBookTest from "./pages/PitmanBookTest.jsx";
 import Pricing from "./pages/Pricing.jsx";
 import AdminStats from "./pages/AdminStats.jsx";
 import NotFound from "./pages/NotFound.jsx";
@@ -25,6 +27,8 @@ export default function App() {
         <Route path="/app/typing" element={<Protected><TypingTrainer /></Protected>} />
         <Route path="/app/steno" element={<Protected><StenoTrainer /></Protected>} />
         <Route path="/app/lessons" element={<Protected><Lessons /></Protected>} />
+        <Route path="/app/format-typing" element={<Protected><FormatTyping /></Protected>} />
+        <Route path="/app/pitman-book-test" element={<Protected><PitmanBookTest /></Protected>} />
         <Route path="/admin" element={<Protected><AdminStats /></Protected>} />
 
         <Route path="/404" element={<NotFound />} />

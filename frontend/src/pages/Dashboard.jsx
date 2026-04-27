@@ -53,6 +53,8 @@ export default function Dashboard() {
             <li><Link to="/app/typing">⚡ Start a typing test</Link></li>
             <li><Link to="/app/steno">✍️ Shorthand practice</Link></li>
             <li><Link to="/app/lessons">📖 Browse lessons</Link></li>
+            <li><Link to="/app/format-typing">📄 Format Typing (20+ formats)</Link></li>
+            <li><Link to="/app/pitman-book-test">📚 Pitman Book Test (Books 1–5)</Link></li>
             <li><Link to="/pricing">💎 Upgrade to Pro</Link></li>
           </ul>
         </div>

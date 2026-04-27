@@ -48,6 +48,8 @@ export default function Layout() {
           {user && <NavLink to="/app/typing">Typing</NavLink>}
           {user && <NavLink to="/app/steno">Shorthand</NavLink>}
           {user && <NavLink to="/app/lessons">Lessons</NavLink>}
+          {user && <NavLink to="/app/format-typing">Format Typing</NavLink>}
+          {user && <NavLink to="/app/pitman-book-test">Pitman Book</NavLink>}
           <NavLink to="/pricing">Pricing</NavLink>
           {user?.is_admin && <NavLink to="/admin">Admin</NavLink>}
           {!user ? (
