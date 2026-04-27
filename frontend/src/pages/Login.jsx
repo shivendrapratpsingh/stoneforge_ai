@@ -24,13 +24,26 @@ export default function Login() {
     <div className="container" style={{maxWidth: 440}}>
       <div className="card">
         <h2 style={{marginTop:0}}>Log in</h2>
-        <form onSubmit={submit}>
+        <form onSubmit={submit} autoComplete="off">
+          {/* Honeypot fields — fool Chrome/Edge into autofilling these
+              hidden inputs instead of the real ones. */}
+          <input type="text" name="fake-user" autoComplete="username" style={{display:"none"}} tabIndex={-1} aria-hidden="true"/>
+          <input type="password" name="fake-pass" autoComplete="new-password" style={{display:"none"}} tabIndex={-1} aria-hidden="true"/>
+
           <label className="label">Email</label>
           <input className="input" type="email" required
-            value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/>
+            name="login-email-no-autofill"
+            value={email} onChange={e=>setEmail(e.target.value)}
+            autoComplete="off"
+            data-lpignore="true"
+            data-form-type="other"/>
           <label className="label" style={{marginTop:12}}>Password</label>
           <input className="input" type="password" required
-            value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password"/>
+            name="login-password-no-autofill"
+            value={password} onChange={e=>setPassword(e.target.value)}
+            autoComplete="new-password"
+            data-lpignore="true"
+            data-form-type="other"/>
           {err && <div className="error" style={{marginTop:12}}>{err}</div>}
           <button className="btn" type="submit" disabled={loading} style={{marginTop:16,width:"100%"}}>
             {loading ? "..." : "Log in"}
